@@ -1,2 +1,29 @@
 # KQLValidator
-A small CLI tool to validate KQL queries in .kql files (assuming they contain table definitions as well)
+
+A small CLI tool to validate KQL query syntax from one or more `.kql` files.
+
+## Usage
+
+```bash
+KQLValidator file1.kql [file2.kql ...]
+```
+
+The CLI merges all provided files in order and validates the merged query.
+
+- Exit code `0`: syntax is valid
+- Exit code `1`: syntax is invalid (or input/usage error)
+
+## Build
+
+```bash
+dotnet build /home/runner/work/KQLValidator/KQLValidator/KQLValidator.slnx
+```
+
+## GitHub Action artifacts
+
+The workflow at `/home/runner/work/KQLValidator/KQLValidator/.github/workflows/build.yml` publishes self-contained executables for:
+
+- `linux-x64`
+- `win-x64`
+
+Artifacts are uploaded as `kqlvalidator-linux-x64` and `kqlvalidator-win-x64`.
