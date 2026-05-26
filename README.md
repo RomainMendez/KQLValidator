@@ -27,3 +27,5 @@ The workflow at `/home/runner/work/KQLValidator/KQLValidator/.github/workflows/b
 - `win-x64`
 
 Artifacts are uploaded as `kqlvalidator-linux-x64` and `kqlvalidator-win-x64`.
+
+The workflow also runs a smoke test using `/home/runner/work/KQLValidator/KQLValidator/tests/smoke/basic-datatable-where.kql` (a `datatable` plus `where` query) against the published executable.

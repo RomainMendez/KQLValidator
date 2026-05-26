@@ -1,0 +1,7 @@
+let SampleData = datatable(Timestamp:datetime, Value:int)
+[
+    datetime(2026-01-01), 10,
+    datetime(2026-01-02), 20
+];
+SampleData
+| where Value > 15

@@ -34,6 +34,18 @@ jobs:
       - name: Publish self-contained executable
         run: dotnet publish KQLValidator/KQLValidator.csproj -c Release -r ${{ matrix.runtime }} --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true -o publish/${{ matrix.runtime }}
 
+      - name: Smoke test published executable (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x publish/${{ matrix.runtime }}/${{ matrix.executable }}
+          publish/${{ matrix.runtime }}/${{ matrix.executable }} tests/smoke/basic-datatable-where.kql
+
+      - name: Smoke test published executable (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & "publish/${{ matrix.runtime }}/${{ matrix.executable }}" "tests/smoke/basic-datatable-where.kql"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
