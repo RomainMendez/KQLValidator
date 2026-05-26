@@ -3,11 +3,13 @@ name: Build KQLValidator
 on:
   push:
     branches: [ "main" ]
+    tags:
+      - "v*"
   pull_request:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish:
@@ -51,3 +53,9 @@ jobs:
         with:
           name: kqlvalidator-${{ matrix.runtime }}
           path: publish/${{ matrix.runtime }}/${{ matrix.executable }}
+
+      - name: Upload executable to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/${{ matrix.runtime }}/${{ matrix.executable }}

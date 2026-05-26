@@ -29,3 +29,5 @@ The workflow at `/home/runner/work/KQLValidator/KQLValidator/.github/workflows/b
 Artifacts are uploaded as `kqlvalidator-linux-x64` and `kqlvalidator-win-x64`.
 
 The workflow also runs a smoke test using `/home/runner/work/KQLValidator/KQLValidator/tests/smoke/basic-datatable-where.kql` (a `datatable` plus `where` query) against the published executable.
+
+When a tag matching `v*` is pushed (for example `v1.0.0`), the same executables are also attached to the corresponding GitHub Release.
