@@ -4,6 +4,7 @@ A small CLI tool to validate KQL query syntax from one or more `.kql` files.
 
 ## Usage
 
+
 ```bash
 KQLValidator file1.kql [file2.kql ...]
 ```
