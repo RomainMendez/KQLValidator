@@ -1,13 +1,31 @@
-using Kusto.Language;
-
 if (args.Length == 0)
 {
-    Console.Error.WriteLine("Usage: KQLValidator <file1.kql> [file2.kql ...]");
+    Console.Error.WriteLine("Usage: KQLValidator [--strict] <file1.kql> [file2.kql ...]");
+    return 1;
+}
+
+var strict = false;
+var filePaths = new List<string>();
+foreach (var arg in args)
+{
+    if (arg == "--strict")
+    {
+        strict = true;
+    }
+    else
+    {
+        filePaths.Add(arg);
+    }
+}
+
+if (filePaths.Count == 0)
+{
+    Console.Error.WriteLine("Usage: KQLValidator [--strict] <file1.kql> [file2.kql ...]");
     return 1;
 }
 
 var contents = new List<string>();
-foreach (var filePath in args)
+foreach (var filePath in filePaths)
 {
     if (!filePath.EndsWith(".kql", StringComparison.OrdinalIgnoreCase))
     {
@@ -31,28 +49,18 @@ if (string.IsNullOrWhiteSpace(mergedQuery))
     return 1;
 }
 
-var code = KustoCode.Parse(mergedQuery);
-var diagnostics = code.GetDiagnostics()
-    .Where(d => d.Severity == DiagnosticSeverity.Error)
-    .ToList();
+var result = KQLValidator.Validator.Validate(mergedQuery, strict);
 
-if (diagnostics.Count == 0)
+if (result.IsValid)
 {
-    Console.WriteLine("KQL syntax is valid.");
+    Console.WriteLine(strict ? "KQL is valid (strict)." : "KQL syntax is valid.");
     return 0;
 }
 
-Console.Error.WriteLine("KQL syntax is invalid:");
-foreach (var diagnostic in diagnostics)
+Console.Error.WriteLine(strict ? "KQL is invalid (strict):" : "KQL syntax is invalid:");
+foreach (var error in result.Errors)
 {
-    if (diagnostic.HasLocation)
-    {
-        Console.Error.WriteLine($"- {diagnostic.Message} (position {diagnostic.Start}-{diagnostic.End})");
-    }
-    else
-    {
-        Console.Error.WriteLine($"- {diagnostic.Message}");
-    }
+    Console.Error.WriteLine($"- {error}");
 }
 
 return 1;

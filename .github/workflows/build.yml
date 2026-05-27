@@ -10,7 +10,23 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run unit tests
+        run: dotnet test tests/KQLValidator.Tests/KQLValidator.Tests.csproj --logger "console;verbosity=normal"
+
   publish:
+    needs: test
     strategy:
       matrix:
         include:
@@ -39,12 +55,14 @@ jobs:
         run: |
           chmod +x publish/${{ matrix.runtime }}/${{ matrix.executable }}
           publish/${{ matrix.runtime }}/${{ matrix.executable }} tests/smoke/basic-datatable-where.kql
+          publish/${{ matrix.runtime }}/${{ matrix.executable }} --strict tests/smoke/strict-undefined-table.kql
 
       - name: Smoke test published executable (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           & "publish/${{ matrix.runtime }}/${{ matrix.executable }}" "tests/smoke/basic-datatable-where.kql"
+          & "publish/${{ matrix.runtime }}/${{ matrix.executable }}" "--strict" "tests/smoke/strict-undefined-table.kql"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
