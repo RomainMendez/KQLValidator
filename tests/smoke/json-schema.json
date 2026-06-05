@@ -1,0 +1,19 @@
+{
+  "functions": [
+    {
+      "name": "myFunction",
+      "parameters": "(x:int, y:string)",
+      "body": "x + 1",
+      "returnType": "int"
+    }
+  ],
+  "tables": [
+    {
+      "name": "Logs",
+      "columns": [
+        { "name": "Timestamp", "type": "datetime" },
+        { "name": "Message", "type": "string" }
+      ]
+    }
+  ]
+}

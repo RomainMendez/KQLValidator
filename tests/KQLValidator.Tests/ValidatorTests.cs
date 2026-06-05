@@ -160,4 +160,87 @@ public class ValidatorTests
         Assert.False(result.IsValid);
         Assert.NotEmpty(result.Errors);
     }
+
+    [Fact]
+    public void Strict_JsonSchemaDefinitions_ReturnValidWhenMergedWithQuery()
+    {
+        var schemaJson = """
+            {
+              "functions": [
+                {
+                  "name": "myFunction",
+                  "parameters": "(x:int, y:string)",
+                  "body": "x + 1",
+                  "returnType": "int"
+                }
+              ],
+              "tables": [
+                {
+                  "name": "Logs",
+                  "columns": [
+                    { "name": "Timestamp", "type": "datetime" },
+                    { "name": "Message", "type": "string" }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var schemaKql = JsonSchemaParser.ConvertSchemaToKql(JsonSchemaParser.ParseJson(schemaJson));
+        var query = """
+            Logs
+            | extend NextValue = myFunction(1, Message)
+            | project Timestamp, Message, NextValue
+            """;
+
+        var merged = string.Join(Environment.NewLine, schemaKql, query);
+        var result = Validator.Validate(merged, strict: true);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void JsonSchemaParser_MissingRequiredFunctionBody_Throws()
+    {
+        var schema = new SchemaDefinition
+        {
+            Functions =
+            [
+                new FunctionDefinition
+                {
+                    Name = "myFunction",
+                    Parameters = "(x:int)",
+                    Body = ""
+                }
+            ]
+        };
+
+        var exception = Assert.Throws<InvalidDataException>(() => JsonSchemaParser.ConvertSchemaToKql(schema));
+
+        Assert.Contains("body is required", exception.Message);
+    }
+
+    // ── Microsoft Defender Advanced Hunting functions ─────────────────────────
+
+    [Fact]
+    public void Lenient_FileProfileFunction_WithValidQuery_ReturnsValid()
+    {
+        // FileProfile is a function from Microsoft Defender Advanced Hunting
+        // that returns information about a file based on its SHA1 hash
+        var kql = """
+            let deviceTable = datatable(DeviceId:string, FileName:string, Sha1:string)
+            [
+                "device1", "test.exe", "e5fa44f2b31c1fb553b6021e7aab6b74476544c0",
+                "device2", "malware.exe", "abc123def456fab1a2b3c4d5e6f7890123456789"
+            ];
+            deviceTable
+            | extend ProfileResult = FileProfile(Sha1)
+            | project DeviceId, FileName, Sha1, ProfileResult
+            """;
+
+        var result = Validator.Validate(kql, strict: false);
+
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
+    }
 }

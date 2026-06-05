@@ -1,6 +1,11 @@
+using KQLValidator;
+using System.Text.Json;
+
+const string Usage = "Usage: KQLValidator [--strict] <file1.kql|file1.json> [file2.kql|file2.json ...]";
+
 if (args.Length == 0)
 {
-    Console.Error.WriteLine("Usage: KQLValidator [--strict] <file1.kql> [file2.kql ...]");
+    Console.Error.WriteLine(Usage);
     return 1;
 }
 
@@ -20,16 +25,16 @@ foreach (var arg in args)
 
 if (filePaths.Count == 0)
 {
-    Console.Error.WriteLine("Usage: KQLValidator [--strict] <file1.kql> [file2.kql ...]");
+    Console.Error.WriteLine(Usage);
     return 1;
 }
 
 var contents = new List<string>();
 foreach (var filePath in filePaths)
 {
-    if (!filePath.EndsWith(".kql", StringComparison.OrdinalIgnoreCase))
+    if (!IsSupportedFile(filePath))
     {
-        Console.Error.WriteLine($"Argument is not a .kql file: {filePath}");
+        Console.Error.WriteLine($"Argument is not a .kql or .json file: {filePath}");
         return 1;
     }
 
@@ -39,7 +44,15 @@ foreach (var filePath in filePaths)
         return 1;
     }
 
-    contents.Add(await File.ReadAllTextAsync(filePath));
+    try
+    {
+        contents.Add(await ReadContentAsync(filePath));
+    }
+    catch (Exception ex) when (ex is JsonException or InvalidDataException)
+    {
+        Console.Error.WriteLine($"Invalid JSON schema file '{filePath}': {ex.Message}");
+        return 1;
+    }
 }
 
 var mergedQuery = string.Join(Environment.NewLine, contents);
@@ -64,3 +77,19 @@ foreach (var error in result.Errors)
 }
 
 return 1;
+
+static bool IsSupportedFile(string filePath) =>
+    filePath.EndsWith(".kql", StringComparison.OrdinalIgnoreCase) ||
+    filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase);
+
+static async Task<string> ReadContentAsync(string filePath)
+{
+    if (filePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
+    {
+        var json = await File.ReadAllTextAsync(filePath);
+        var schema = JsonSchemaParser.ParseJson(json);
+        return JsonSchemaParser.ConvertSchemaToKql(schema);
+    }
+
+    return await File.ReadAllTextAsync(filePath);
+}
