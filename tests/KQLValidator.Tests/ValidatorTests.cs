@@ -219,4 +219,28 @@ public class ValidatorTests
 
         Assert.Contains("body is required", exception.Message);
     }
+
+    // ── Microsoft Defender Advanced Hunting functions ─────────────────────────
+
+    [Fact]
+    public void Lenient_FileProfileFunction_WithValidQuery_ReturnsValid()
+    {
+        // FileProfile is a function from Microsoft Defender Advanced Hunting
+        // that returns information about a file based on its SHA1 hash
+        var kql = """
+            let deviceTable = datatable(DeviceId:string, FileName:string, Sha1:string)
+            [
+                "device1", "test.exe", "e5fa44f2b31c1fb553b6021e7aab6b74476544c0",
+                "device2", "malware.exe", "abc123def456fab1a2b3c4d5e6f7890123456789"
+            ];
+            deviceTable
+            | extend ProfileResult = FileProfile(Sha1)
+            | project DeviceId, FileName, Sha1, ProfileResult
+            """;
+
+        var result = Validator.Validate(kql, strict: false);
+
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
+    }
 }
