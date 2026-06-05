@@ -1,0 +1,3 @@
+Logs
+| extend NextValue = myFunction(1, Message)
+| project Timestamp, Message, NextValue

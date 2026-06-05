@@ -1,12 +1,12 @@
 # KQLValidator
 
-A small CLI tool to validate KQL query syntax from one or more `.kql` files.
+A small CLI tool to validate KQL query syntax from one or more `.kql` and `.json` schema files.
 
 ## Usage
 
 
 ```bash
-KQLValidator [--strict] file1.kql [file2.kql ...]
+KQLValidator [--strict] <file1.kql|file1.json> [file2.kql|file2.json ...]
 ```
 
 The CLI merges all provided files in order and validates the merged query.
@@ -18,7 +18,7 @@ The CLI merges all provided files in order and validates the merged query.
 
 | Flag | Description |
 |------|-------------|
-| `--strict` | Enable strict (semantic) validation. Fails if any table, function, or variable referenced in the query is not defined within the provided files. Use this when your `.kql` files contain full schema definitions (table declarations, `let` bindings, function definitions) and you want to ensure complete type safety. |
+| `--strict` | Enable strict (semantic) validation. Fails if any table, function, or variable referenced in the query is not defined within the provided files. Use this when your `.kql` and `.json` schema files contain full table declarations, `let` bindings, or function definitions and you want to ensure complete type safety. |
 
 ### Strict mode
 
@@ -30,7 +30,38 @@ KQLValidator query.kql
 
 # Full semantic validation (requires all tables/functions to be defined)
 KQLValidator --strict schema.kql query.kql
+
+# Mix JSON schema definitions with KQL queries
+KQLValidator --strict schema.json query.kql
 ```
+
+## JSON schema files
+
+JSON schema files can define functions and tables that are converted into KQL `let` bindings before validation.
+
+```json
+{
+  "functions": [
+    {
+      "name": "myFunction",
+      "parameters": "(x:int, y:string)",
+      "body": "x + 1",
+      "returnType": "int"
+    }
+  ],
+  "tables": [
+    {
+      "name": "Logs",
+      "columns": [
+        { "name": "Timestamp", "type": "datetime" },
+        { "name": "Message", "type": "string" }
+      ]
+    }
+  ]
+}
+```
+
+Functions and tables are merged in the same order as the files you pass on the command line, so schema files can be combined with existing `.kql` sources as needed.
 
 ## Build
 

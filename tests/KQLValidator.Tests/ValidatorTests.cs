@@ -160,4 +160,63 @@ public class ValidatorTests
         Assert.False(result.IsValid);
         Assert.NotEmpty(result.Errors);
     }
+
+    [Fact]
+    public void Strict_JsonSchemaDefinitions_ReturnValidWhenMergedWithQuery()
+    {
+        var schemaJson = """
+            {
+              "functions": [
+                {
+                  "name": "myFunction",
+                  "parameters": "(x:int, y:string)",
+                  "body": "x + 1",
+                  "returnType": "int"
+                }
+              ],
+              "tables": [
+                {
+                  "name": "Logs",
+                  "columns": [
+                    { "name": "Timestamp", "type": "datetime" },
+                    { "name": "Message", "type": "string" }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        var schemaKql = JsonSchemaParser.ConvertSchemaToKql(JsonSchemaParser.ParseJson(schemaJson));
+        var query = """
+            Logs
+            | extend NextValue = myFunction(1, Message)
+            | project Timestamp, Message, NextValue
+            """;
+
+        var merged = string.Join(Environment.NewLine, schemaKql, query);
+        var result = Validator.Validate(merged, strict: true);
+
+        Assert.True(result.IsValid, string.Join(Environment.NewLine, result.Errors));
+    }
+
+    [Fact]
+    public void JsonSchemaParser_MissingRequiredFunctionBody_Throws()
+    {
+        var schema = new SchemaDefinition
+        {
+            Functions =
+            [
+                new FunctionDefinition
+                {
+                    Name = "myFunction",
+                    Parameters = "(x:int)",
+                    Body = ""
+                }
+            ]
+        };
+
+        var exception = Assert.Throws<InvalidDataException>(() => JsonSchemaParser.ConvertSchemaToKql(schema));
+
+        Assert.Contains("body is required", exception.Message);
+    }
 }
